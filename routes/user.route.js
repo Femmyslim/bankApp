@@ -1,6 +1,7 @@
 const express = require('express')
 const router = express.Router()
-const { signUpCreation, phoneAndEmailVerification, verifyPhoneOtp, resendPhoneOtp, resendEmailOtp, profileUpdate }=require('../controllers/customer.controller')
+const { signUpCreation, phoneAndEmailVerification, verifyPhoneOtp, 
+        resendPhoneOtp, resendEmailOtp, profileUpdate }=require('../controllers/customer.controller')
 
 
 

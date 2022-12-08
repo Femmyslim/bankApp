@@ -3,15 +3,19 @@ const { v4: uuidv4 } = require('uuid')
 const  { wallet } = require('../models')
 
 
-const createUserWallet = (req, res) => {
+const createUserWallet = async(req, res) => {
 
-    return wallet.create({
-        wallet_id: uuid4(),
+    return await wallet.create({
+        wallet_id: uuidv4(),
         wallet_type: wallet_type,
         balance: 0.00,
         currency: currency,
         customer_id: customer_id
     })
 }
+ const startFundWallet = () => {
 
-module.exports= { createUserWallet }
+
+ }
+
+module.exports= {createUserWallet, startFundWallet} 
