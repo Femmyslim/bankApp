@@ -46,7 +46,7 @@ const { error, value }= signUpValidation(req.body)
 
             return user.create({
                 customer_id: customer_id,
-                lastname: surname,
+                lastname: lastname,
                 othernames: othernames,
                 email: email,
                 phone_number: phone,
