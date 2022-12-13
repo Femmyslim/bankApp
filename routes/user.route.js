@@ -5,7 +5,7 @@ const { signUpCreation, phoneAndEmailVerification, verifyPhoneOtp,
 
 
 
-router.post('/signUp', signUpCreation)
+router.post('/signup', signUpCreation)
 
 router.get('/verify-email-otp/:_otp/:email/:phone', phoneAndEmailVerification)
 

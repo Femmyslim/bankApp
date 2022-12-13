@@ -17,17 +17,19 @@ const signUpCreation= (req, res) =>{
 
 const { error, value }= signUpValidation(req.body)
 
-    if(error !=undefined) {
+    if(error != undefined) {
 
         res.status(400).json({
             status: false,
             message: error.details[0].message
         })
+
     }else{
 
-        const { lastname, othernames, email, phone, password,reset_password} = req.body;
+        const {lastname, othernames, email, phone, password, reset_password} = req.body;
         const customer_id= uuidv4()
         const _otp = produceOtp()
+
     try {
         user.findAll({
             where: {
@@ -61,9 +63,9 @@ const { error, value }= signUpValidation(req.body)
             return createAccountNumberOfUser(customer_id, customer_fullname, sn)
 
         })
-        .then((ceateUserWallet)=>{
+        .then((createUserWalletData)=>{
 
-            return createUserWallet.create('1', 'NGN', customer_id)
+            return createUserWallet(1, 'NGN', customer_id)
 
         })
         .then((insertIntoOtpTable)=> {
@@ -71,13 +73,13 @@ const { error, value }= signUpValidation(req.body)
             return otp.create({
                 otp:  _otp,
                 email: email,
-                phone: phone,
+                phone: phone
             })
         })
         .then((data2) =>{
             sendEmail(email, 'OTP', `Hello ${lastname} ${othernames} , your otp is ${_otp}`)
 
-            res.status(200).send({
+            res.status(200).json({
                 status: true,
                 message: 'Registration successful, An otp has been sent to your email'
             })
@@ -86,13 +88,15 @@ const { error, value }= signUpValidation(req.body)
 
             res.status(400).json({
                 status: false,
-                message: error.message || "Some error occurred while creating the Customer."
+                message: error.message || "Some error occurred while creating the Customer"
             })
         })
     } catch (error) {
+
+        console.log("I ma here")
         res.status(400).json({
             status: false,
-            message: error.message || "Some error occurred while creating the Customer."
+            message: error.message || "Some error occurred while creating the Customer"
         })
     
     }
