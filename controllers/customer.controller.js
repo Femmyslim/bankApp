@@ -13,92 +13,95 @@ const { sendSms } =require('../services/sms')
 
 
 
-const signUpCreation= (req, res) =>{
+const signUp = (req, res) => { 
+    // joi validation
+    const { error, value } = signUpValidation(req.body)
 
-const { error, value }= signUpValidation(req.body)
-
-    if(error != undefined) {
-
+    if (error != undefined) {
+      
         res.status(400).json({
             status: false,
             message: error.details[0].message
         })
-
     }else{
-
-        const {lastname, othernames, email, phone, password, reset_password} = req.body;
-        const customer_id= uuidv4()
+    
+    const { lastname, othernames, email, phone, password, repeat_password } = req.body;
+        const customer_id = uuidv4()
         const _otp = produceOtp()
-
     try {
-        user.findAll({
-            where: {
-                [Op.or]: [
-                    { email: email },
-                    {phone_number: phone}
-                  ]
-                }  
+
+    user.findAll({
+        where: {
+            [Op.or]: [
+                { email: email },
+                { phone_number: phone }
+            ]
+        }
+    })
+    .then((data) => {
+        if (data.length > 0) throw new Error('Email or phone number already exist')
+
+        return dissolveMyPassword(password) //[hash, salt]
+
+    })
+    .then(([hash, salt]) => {
+
+        return user.create({
+            customer_id: customer_id,
+            lastname: lastname,
+            othernames: othernames,
+            email: email,
+            phone_number: phone,
+            password_hash: hash,
+            password_salt: salt,
         })
-        .then((data)=>{
-            if(data.length > 0)  throw new error('Email or phone number already exist')
 
-            return dissolveMyPassword(password) //[{hash,salt}]    
+    })
+    .then((createUserData) => {
+   
+        const customer_fullname = `${lastname} ${othernames}`
+        const sn = createUserData.sn
+        return createAccountNumberOfUser(customer_id, customer_fullname, sn)
+
+    })
+     .then(createUserWalletData => {
+         return createUserWallet(1, 'NGN', customer_id)  //create wallet for the cutomwer
+     })   
+    .then((insertIntoOtpTable) => {
+     
+        return otp.create({
+           
+            otp: _otp,
+            email: email,
+            phone: phone,
         })
-        .then(([hash, salt]) =>{
 
-            return user.create({
-                customer_id: customer_id,
-                lastname: lastname,
-                othernames: othernames,
-                email: email,
-                phone_number: phone,
-                password_hash: hash,
-                password_salt: salt
-            })
+    })
+    .then((data3) => {
+        
+        sendEmail(email, 'OTP', ` Hello  ${lastname} ${othernames} ,\n Your OTP is ${_otp}`)
+
+        res.status(200).send({
+            status: true,
+            message: 'Registration successful, An otp has been sent to your email'
         })
-        .then((createUserAccountData)=>{
 
-            const customer_fullname= `${lastname}${othernames}`
-            const sn= createUserAccountData.sn
-            return createAccountNumberOfUser(customer_id, customer_fullname, sn)
-
-        })
-        .then((createUserWalletData)=>{
-
-            return createUserWallet(1, 'NGN', customer_id)
-
-        })
-        .then((insertIntoOtpTable)=> {
-
-            return otp.create({
-                otp:  _otp,
-                email: email,
-                phone: phone
-            })
-        })
-        .then((data2) =>{
-            sendEmail(email, 'OTP', `Hello ${lastname} ${othernames} , your otp is ${_otp}`)
-
-            res.status(200).json({
-                status: true,
-                message: 'Registration successful, An otp has been sent to your email'
-            })
-        })
-        .catch((error) =>{
-
-            res.status(400).json({
-                status: false,
-                message: error.message || "Some error occurred while creating the Customer"
-            })
-        })
-    } catch (error) {
-
-        console.log("I ma here")
+    })
+    .catch((err) => {
+           console.log("errrr1: ", err)
         res.status(400).json({
             status: false,
-            message: error.message || "Some error occurred while creating the Customer"
+            message: err.message || "Some error occurred while creating the Customer."
         })
-    
+
+    })
+
+    } catch (error) {
+        console.log("error: ", error)
+        res.status(400).json({
+            status: false,
+            message: error.message || "Some error occurred while creating the Customer."
+        })
     }
 }
 }
@@ -108,29 +111,36 @@ const phoneAndEmailVerification= (req, res) => {
 
     const phone_otp = produceOtp()
 
-    const { phone, email, _otp } = req.params
+    const { email, phone, _otp } = req.params
     try {
         otp.findAll({
             where:{
                 email: email,
                 otp: _otp
             },
-            attributes: ['otp', 'email', 'phone', 'createdAt']
+            attributes: ['otp', 'email', 'phone', 'createdAt'],
         })
-        .then((otpFetched) =>{
-            if(otpFetched === 0) throw new error(`Invalid otp`)
+        .then((otpDataFetched) => {
+            if (otpDataFetched.length == 0) throw new Error('Invalid OTP')
+    
+            console.log("otpdataFetched: ", otpDataFetched[0])
 
-            const timeOtpReceived= Date.now() - new Date(otpFetched[0].dataValues.createdAt)
-            const convertMillisecondsToMin = Math.floor(timeOtpReceived/60000) //this is bcos one milliseconds is 1000 * by 60 sec =60,000 for one minutes
-            if(convertMillisecondsToMin > process.env.EXPIRATION_TIME) throw new error(`Otp has expired`)
+            const timeOtpWasSent = Date.now() - new Date(otpDataFetched[0].dataValues.createdAt)
+        
+            const convertMilliToMin = Math.floor(timeOtpWasSent / 60000) // 60000 is the number of milliseconds in a minute
 
-            return user.update({is_email_verified: true}, {
-                where: { 
-                    email: email
+            if (convertMilliToMin > process.env.EXPIRATION_TIME) throw new Error('OTP has expired')
+
+            return user.update({ is_email_verified: true }, {
+                where: {
+                  email: email
                 }
-            })
+              })
+            
+
+        
         })
-        .then((emailIsVerified) => {
+        .then((emailverifiedData) => { 
             return otp.destroy({
                 where: {
                     otp: _otp,
@@ -138,38 +148,39 @@ const phoneAndEmailVerification= (req, res) => {
                 }
             })
         })
-        .then((data3)=> {
+        .then((data3) => { 
+
             return otp.create({
                 otp: phone_otp,
-                email: email,
-                phone: phone
+                phone: phone,
+                email: email
             })
+           
         })
-        .then((data4)=>{
-
-            sendSms(phone, `Hello your otp is ${phone_otp}`)
-            sendEmail(email,`Email successfully verified. Hello ${email}, thank you for verifying your email. This is to inform you that an otp has been sent to your phone to complete your registration, kindly use it to complete your registration process.`)
-
+        .then((data4) => {
+            
+            sendEmail(email, 'Email Verification Successful', ` Hello  ${email},\n Thank you for verifying your email. An otp has been sent to your phone number, kindly use this otp to also verify your phone number`)
+         
         })
-        .then((data5) =>{
-            res.status(200).json({
-                status: true,
-                message: 'Email verification successful. An otp has been sent to your phone'
-            })
-
+        .then((data5) => {
+                res.status(200).send({
+                    status: true,
+                    message: 'Email verification successful, An otp has been sent to your phone number'
+                })
         })
-        .catch((err) =>{
-
+        .catch((err) => {
             res.status(400).json({
                 status: false,
-                message: err.message
+                message: err.message || "Some error occurred while verifying OTP."
             })
         })
+        
     } catch (err) {
         res.status(400).json({
             status: false,
-            message: err.message
+            message: err.message || "Some error occurred while verifying OTP."
         })
+
     }
 
 }
@@ -385,4 +396,4 @@ const profileUpdate= async (req, res)=> {
 
 
 
-module.exports= { signUpCreation, phoneAndEmailVerification, verifyPhoneOtp, resendPhoneOtp, resendEmailOtp, profileUpdate }
+module.exports= { signUp, phoneAndEmailVerification, verifyPhoneOtp, resendPhoneOtp, resendEmailOtp, profileUpdate }

@@ -1,11 +1,11 @@
 const express = require('express')
 const router = express.Router()
-const { signUpCreation, phoneAndEmailVerification, verifyPhoneOtp, 
+const { signUp, phoneAndEmailVerification, verifyPhoneOtp, 
         resendPhoneOtp, resendEmailOtp, profileUpdate }=require('../controllers/customer.controller')
 
 
 
-router.post('/signup', signUpCreation)
+router.post('/signup', signUp)
 
 router.get('/verify-email-otp/:_otp/:email/:phone', phoneAndEmailVerification)
 
