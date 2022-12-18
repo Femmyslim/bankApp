@@ -2,6 +2,7 @@ const nodemon = require('nodemon')
 const { Model } = require('sequelize')
 const { v4: uuidv4 } = require('uuid')
 const  { wallet } = require('../models')
+const {getBank, verifyPayment, initializePayment} = require('../services/paystack')
 
 
 const createUserWallet = (wallet_type, currency='NGN', customer_id) => {
@@ -18,7 +19,7 @@ const createUserWallet = (wallet_type, currency='NGN', customer_id) => {
     const {email, amount} =req.body
 
     try {
-        const startPayment =await initializePament(email, amount)
+        const startPayment =await initializePayment(email, amount)
         res.status(200).json({
             status: true,
             message: 'Payment initialize',
@@ -71,7 +72,7 @@ const getAccountStatement =async (req, res) => {
 } 
 const getAllBank =async (req, res) =>{
     try {
-        const allBank = await getbank()
+        const allBank = await getBank()
         res.status(200).json({
             status: true,
             message: 'All bank retrieved',

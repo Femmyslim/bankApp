@@ -5,6 +5,7 @@ const { profileupdateValidation } = require('../validations/profileupdate.valida
 const { createAccountNumberOfUser } =require('../controllers/account.controller')
 const { createUserWallet } = require('../controllers/wallet.controller')
 const { dissolveMyPassword, produceOtp }=require('../utils')
+const {beneficiaryValidation, updateBeneficiaryValidation} =require('../validations/beneficiary.validation')
 const { v4: uuidv4 } = require('uuid')
 const { Op } = require("sequelize");
 const { sendEmail } =require('../services/email')
@@ -393,7 +394,99 @@ const profileUpdate= async (req, res)=> {
 
 }
 
+const getUserInfo = async (req, res) =>{
+    const customer_id =req.body.userData
+    const customerData = await user.findOne({ where: {customer_id: customer_id}})
+    const customerAccountData = await user.findOne({ where: {customer_id: customer_id},
+                                                    attributes: ['account_number', 'account_name', 'balance'],
+                                                })
+
+    delete customerData.dataValues.passord_hash,
+    delete customerData.dataValues.password_salt     
+    
+    res.status(200).send({
+        status: true,
+        message:'Customer details successfully fetched',
+        data: customerData
+    })
+                                                
+}
+
+const getAllBeneficiaries =async (req, res) =>{
+    const { customer_id } = req.body.userData //from the authorization middleware
+    const beneficiaryData = await beneficiary.findAll({ where: { customer_id: customer_id } })
+    
+    res.status(200).send({
+        status: true,
+        message: 'Beneficiary details successfully fetched',
+        data: beneficiaryData
+    })
+}
+
+
+const addBeneficiaries = async (req, res) => {
+ const {error, values} = beneficiaryValidation(req.body)
+ if (error != undefined) {  
+    res.status(400).json({
+        status: false,
+        message: error.details[0].message
+    })
+ }
+ else{
+    const customer_id = req.body.userData
+    try {
+        req.body.customer_id = customer_id
+    await beneficiary.create(req.body)
+
+    res.status(200).send({
+        status: true,
+        message: 'Beneficiary added successfully'
+    })
+    } catch (error) {
+        res.status(400).send({
+            status: false,
+            message: error.message
+        })
+    }
+}
+}
+
+
+const updateBeneficiary = async (req, res) => { 
+ 
+    // joi validation
+const { error, value } = updateBeneficiaryValidation(req.body)
+
+if (error != undefined) {  
+    res.status(400).json({
+        status: false,
+        message: error.details[0].message
+    })
+} else {
+
+    const { beneficiary_id } = req.params
+    try {
+
+        await beneficiary.update(req.body, { where: { id: beneficiary_id } })
+
+        res.status(200).send({
+            status: true,
+            message: 'Beneficiary successfully updated'
+        })
+
+    } catch (e) {
+        res.status(400).json({
+            status: false,
+            message: e.message || "Some error occurred"
+        })
+    }
+}
+
+
+}
 
 
 
-module.exports= { signUp, phoneAndEmailVerification, verifyPhoneOtp, resendPhoneOtp, resendEmailOtp, profileUpdate }
+
+
+module.exports= { signUp, phoneAndEmailVerification, verifyPhoneOtp, updateBeneficiary, resendPhoneOtp, resendEmailOtp, profileUpdate, addBeneficiaries, getAllBeneficiaries, getUserInfo }
