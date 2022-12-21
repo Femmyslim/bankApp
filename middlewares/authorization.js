@@ -35,4 +35,4 @@ const authorization = async (req, res) => {
 
 
 
-module.export = authorization
+module.exports= {authorization }

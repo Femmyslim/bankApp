@@ -394,7 +394,7 @@ const profileUpdate= async (req, res)=> {
 
 }
 
-const getUserInfo = async (req, res) =>{
+const getUserDetails = async (req, res) =>{
     const customer_id =req.body.userData
     const customerData = await user.findOne({ where: {customer_id: customer_id}})
     const customerAccountData = await user.findOne({ where: {customer_id: customer_id},
@@ -489,4 +489,4 @@ if (error != undefined) {
 
 
 
-module.exports= { signUp, phoneAndEmailVerification, verifyPhoneOtp, updateBeneficiary, resendPhoneOtp, resendEmailOtp, profileUpdate, addBeneficiaries, getAllBeneficiaries, getUserInfo }
+module.exports= { signUp, phoneAndEmailVerification, verifyPhoneOtp, updateBeneficiary, resendPhoneOtp, resendEmailOtp, profileUpdate, addBeneficiaries, getAllBeneficiaries, getUserDetails }

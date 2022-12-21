@@ -7,8 +7,9 @@ const port = process.env.APP_PORT
 const bodyParser = require('body-parser')
 const sequelize = require('./config/sequelize')
 const authorizationRoute = require('./routes/authorization.route')
-const registerRoute = require('./routes/user.route');
+const registerRoute = require('./routes/user.route')
 const walletRoute = require('./routes/wallet.route')
+const airtimeRoute = require('./routes/airtime.route')
 
 
 
@@ -19,6 +20,7 @@ app.use(cors())
 app.use(bodyParser.json())
 app.use(registerRoute)
 app.use(authorizationRoute)
+app.use(airtimeRoute)
 app.use(walletRoute)
 
 

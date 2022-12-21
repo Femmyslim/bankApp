@@ -1,7 +1,6 @@
 const express = require('express')
 const router = express.Router()
-const { signUp, phoneAndEmailVerification, verifyPhoneOtp, 
-        resendPhoneOtp, resendEmailOtp, profileUpdate }=require('../controllers/customer.controller')
+const { signUp, phoneAndEmailVerification, verifyPhoneOtp, updateBeneficiary, resendPhoneOtp, resendEmailOtp, profileUpdate, addBeneficiaries, getAllBeneficiaries, getUserDetails }=require('../controllers/customer.controller')
 
 
 
@@ -15,7 +14,15 @@ router.post('/verify-phone-otp/:phone', resendPhoneOtp)
 
 router.post('/verify-email-otp/:email', resendEmailOtp)
 
-router.put('/profile/:customer_id', profileUpdate)
+router.put('/update', profileUpdate)
+
+router.get('/profile', getUserDetails)
+
+router.post('/beneficiary/add', addBeneficiaries)
+
+router.put('/beneficiary/:beneficiary_id', updateBeneficiary)
+
+router.get('/beneficiaries', getAllBeneficiaries)
 
 
 module.exports= router
